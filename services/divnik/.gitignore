@@ -93,5 +93,5 @@ Network Trash Folder
 Temporary Items
 .apdisk
 .idea
-volumes/db
-!volumes/db/.gitkeep
+
+volumes/db/data
