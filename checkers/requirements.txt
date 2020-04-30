@@ -1,2 +1,4 @@
 checklib
 Faker
+gevent
+requests
