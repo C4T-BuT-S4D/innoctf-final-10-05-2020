@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+
 import api.models
 
 
@@ -51,11 +52,11 @@ class CourseRelationshipSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         validated_data['level'] = instance.level
-        super(CourseRelationshipSerializer, self).update(instance, validated_data)
+        return super(CourseRelationshipSerializer, self).update(instance, validated_data)
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
-        super(CourseRelationshipSerializer, self).create(validated_data)
+        return super(CourseRelationshipSerializer, self).create(validated_data)
 
 
 class GradeSerializer(serializers.ModelSerializer):

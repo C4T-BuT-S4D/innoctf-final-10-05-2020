@@ -12,6 +12,7 @@ router.register('grades', api.views.GradeViewSet)
 urlpatterns = [
     re_path('^', include(router.urls)),
 
+    re_path('^me/$', api.views.CurrentUserRetrieveUpdateView.as_view()),
     re_path('^login/$', api.views.LoginView.as_view()),
     re_path('^logout/$', api.views.LogoutView.as_view()),
 ]

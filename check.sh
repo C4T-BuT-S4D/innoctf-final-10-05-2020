@@ -2,13 +2,7 @@
 
 declare -A VULNS
 VULNS=(
-  [grox]=1
-  [ice-and-fire]=1
-  [martian]=2
-  [msp]=2
-  [planetzor]=1
-  [spacesos]=1
-  [exoplanet]=1
+  [divnik]=2
 )
 
 if [ -z "$RUNS" ]; then
@@ -29,8 +23,8 @@ print_output() {
   cat /tmp/checker_stderr
 }
 
+# shellcheck disable=SC2153
 for SERVICE in $SERVICES; do
-
   if [[ -n "$1" ]] && [[ "$1" != "$SERVICE" ]] && [[ "$1" != "all" ]]; then
     continue
   fi
@@ -90,4 +84,3 @@ for SERVICE in $SERVICES; do
     echo "Test $i successful!"
   done
 done
-

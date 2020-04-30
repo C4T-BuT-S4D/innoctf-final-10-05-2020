@@ -1,13 +1,15 @@
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.views import APIView
-from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
-from rest_framework.response import Response
-from rest_framework.decorators import action
 from django.contrib.auth import authenticate, login, logout
-
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, mixins
+from rest_framework.decorators import action
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+from rest_framework.generics import RetrieveAPIView
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 import api.models
+import api.pagination
 import api.serializers
 
 
@@ -38,9 +40,21 @@ class LogoutView(APIView):
         return Response('ok')
 
 
+class CurrentUserRetrieveUpdateView(RetrieveAPIView):
+    permission_classes = (IsAuthenticated,)
+    queryset = api.models.User.objects.all()
+    serializer_class = api.serializers.UserSerializer
+
+    def get_object(self):
+        queryset = self.get_queryset()
+        obj = get_object_or_404(queryset, id=self.request.user.id)
+        return obj
+
+
 class UserViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
     queryset = api.models.User.objects.all()
     serializer_class = api.serializers.UserSerializer
+    pagination_class = api.pagination.UserPagination
     permission_classes = (AllowAny,)
 
 
@@ -60,19 +74,24 @@ class CourseViewSet(viewsets.ModelViewSet):
         if self.action == 'retrieve':
             return
 
-        if self.action == 'get_reward':
-            if not obj.is_finished:
-                raise PermissionDenied('Course is not finished')
+        rel = obj.uc_rels.filter(user=request.user).first()
 
-            grade = obj.get_user_grade(self.request.user)
+        if not rel:
+            raise PermissionDenied('Not a participant')
 
-            if grade < 5:
-                raise PermissionDenied('Haven\'t earned the reward')
-
+        if rel.level == 'T':
             return
 
-        if not obj.uc_rels.filter(level='T', user=request.user).exists():
-            self.permission_denied(request, 'No access')
+        if self.action != 'get_reward':
+            raise PermissionDenied('No access')
+
+        if not obj.is_finished:
+            raise PermissionDenied('Course is not finished')
+
+        grade = obj.get_user_grade(self.request.user)
+
+        if grade < 5:
+            raise PermissionDenied('Haven\'t earned the reward')
 
     @action(methods=['get'], detail=True, url_path='reward')
     def get_reward(self, request, *args, **kwargs):
@@ -112,7 +131,7 @@ class GradeViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
                 return
 
             rels = api.models.UserCourseRelationship.objects.filter(user=self.request.user, level='T')
-            if rels.exist():
+            if rels.exists():
                 return
 
             self.permission_denied(request, 'No access')
