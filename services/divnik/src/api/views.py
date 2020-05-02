@@ -1,43 +1,14 @@
-from django.contrib.auth import authenticate, login, logout
+from django.shortcuts import get_object_or_404
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, mixins
 from rest_framework.decorators import action
-from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
 
 import api.models
 import api.pagination
 import api.serializers
-
-
-class LoginView(APIView):
-    permission_classes = (AllowAny,)
-
-    @staticmethod
-    def post(request):
-        username = request.data.get('username')
-        password = request.data.get('password')
-        user = authenticate(request, username=username, password=password)
-
-        if not user:
-            raise AuthenticationFailed('Invalid credentials')
-
-        login(request, user)
-
-        serializer = api.serializers.UserSerializer(instance=user)
-        return Response(serializer.data)
-
-
-class LogoutView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    @staticmethod
-    def post(request):
-        logout(request)
-        return Response('ok')
 
 
 class CurrentUserRetrieveUpdateView(RetrieveAPIView):

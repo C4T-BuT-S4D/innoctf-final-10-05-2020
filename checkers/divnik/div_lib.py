@@ -43,9 +43,10 @@ class CheckMachine:
 
         self.c.check_response(r, 'Could not login', status=st)
         data = self.c.get_json(r, 'Invalid response from login')
-        self.c.assert_in('id', data, 'Could not login')
+        self.c.assert_in('token', data, 'Could not login')
 
-        sess.headers['X-CSRFTOKEN'] = sess.cookies['csrftoken']
+        sess.headers['Authorization'] = 'Token ' + data['token']
+        # sess.headers['X-CSRFTOKEN'] = sess.cookies['csrftoken']
 
         return sess
 
