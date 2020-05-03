@@ -4,10 +4,34 @@ from rest_framework.exceptions import ValidationError
 import api.models
 
 
+class CourseRelationshipSerializer(serializers.ModelSerializer):
+    user_username = serializers.SlugRelatedField(read_only=True, source='user', slug_field='username')
+    course_name = serializers.SlugRelatedField(read_only=True, source='course', slug_field='name')
+    user = serializers.PrimaryKeyRelatedField(
+        queryset=api.models.User.objects.all(),
+        default=serializers.CurrentUserDefault(),
+    )
+
+    class Meta:
+        model = api.models.UserCourseRelationship
+        fields = api.models.UserCourseRelationship.SERIALIZED_FIELDS + ('user_username', 'course_name')
+
+    def update(self, instance, validated_data):
+        validated_data['level'] = instance.level
+        validated_data['user'] = self.context['request'].user
+        return super(CourseRelationshipSerializer, self).update(instance, validated_data)
+
+    def create(self, validated_data):
+        validated_data['user'] = self.context['request'].user
+        return super(CourseRelationshipSerializer, self).create(validated_data)
+
+
 class UserSerializer(serializers.ModelSerializer):
+    uc_rels = CourseRelationshipSerializer(read_only=True, many=True)
+
     class Meta:
         model = api.models.User
-        fields = api.models.User.SERIALIZED_FIELDS
+        fields = api.models.User.SERIALIZED_FIELDS + ('uc_rels',)
 
         extra_kwargs = {
             'password': {
@@ -21,9 +45,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class CourseSerializer(serializers.ModelSerializer):
+    is_enrolled = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = api.models.Course
-        fields = api.models.Course.SERIALIZED_FIELDS
+        fields = api.models.Course.SERIALIZED_FIELDS + ('is_enrolled',)
 
         extra_kwargs = {
             'reward': {
@@ -45,24 +71,12 @@ class CourseRewardSerializer(serializers.ModelSerializer):
         fields = ('reward',)
 
 
-class CourseRelationshipSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = api.models.UserCourseRelationship
-        fields = api.models.UserCourseRelationship.SERIALIZED_FIELDS
-
-    def update(self, instance, validated_data):
-        validated_data['level'] = instance.level
-        return super(CourseRelationshipSerializer, self).update(instance, validated_data)
-
-    def create(self, validated_data):
-        validated_data['user'] = self.context['request'].user
-        return super(CourseRelationshipSerializer, self).create(validated_data)
-
-
 class GradeSerializer(serializers.ModelSerializer):
+    user = serializers.SlugRelatedField(read_only=True, slug_field='user_id', source='rel')
+
     class Meta:
         model = api.models.Grade
-        fields = api.models.Grade.SERIALIZED_FIELDS
+        fields = api.models.Grade.SERIALIZED_FIELDS + ('user',)
 
         extra_kwargs = {
             'comment': {

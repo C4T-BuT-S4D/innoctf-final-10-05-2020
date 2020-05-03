@@ -48,3 +48,8 @@ class PageNumberWithPageSizePagination(PageNumberPagination):
 class UserPagination(PageNumberWithPageSizePagination):
     page_size = 50
     max_page_size = 100
+
+
+class CoursePagination(PageNumberWithPageSizePagination):
+    page_size = 20
+    max_page_size = 30

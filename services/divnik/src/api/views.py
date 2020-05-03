@@ -1,4 +1,4 @@
-from django.shortcuts import get_object_or_404
+from django.db.models import Exists, OuterRef
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, mixins
 from rest_framework.decorators import action
@@ -13,7 +13,7 @@ import api.serializers
 
 class CurrentUserRetrieveUpdateView(RetrieveAPIView):
     permission_classes = (IsAuthenticated,)
-    queryset = api.models.User.objects.all()
+    queryset = api.models.User.objects.prefetch_related('uc_rels').all()
     serializer_class = api.serializers.UserSerializer
 
     def get_object(self):
@@ -23,7 +23,7 @@ class CurrentUserRetrieveUpdateView(RetrieveAPIView):
 
 
 class UserViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
-    queryset = api.models.User.objects.all()
+    queryset = api.models.User.objects.prefetch_related('uc_rels').all()
     serializer_class = api.serializers.UserSerializer
     pagination_class = api.pagination.UserPagination
     permission_classes = (AllowAny,)
@@ -33,11 +33,25 @@ class CourseViewSet(viewsets.ModelViewSet):
     queryset = api.models.Course.objects.all()
     serializer_class = api.serializers.CourseSerializer
     permission_classes = (IsAuthenticated,)
+    pagination_class = api.pagination.CoursePagination
 
     def get_serializer_class(self):
         if self.action == 'get_reward':
             return api.serializers.CourseRewardSerializer
         return super(CourseViewSet, self).get_serializer_class()
+
+    def get_queryset(self):
+        qs = super(CourseViewSet, self).get_queryset()
+        if self.action == 'list':
+            qs = qs.annotate(
+                is_enrolled=Exists(
+                    api.models.UserCourseRelationship.objects.filter(
+                        user=self.request.user,
+                        course=OuterRef('id'),
+                    )
+                ),
+            )
+        return qs
 
     def check_object_permissions(self, request, obj: api.models.Course):
         super(CourseViewSet, self).check_object_permissions(request, obj)
@@ -70,7 +84,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
 
 class CourseRelationshipViewSet(viewsets.ModelViewSet):
-    queryset = api.models.UserCourseRelationship.objects.all()
+    queryset = api.models.UserCourseRelationship.objects.select_related('user', 'course').all()
     serializer_class = api.serializers.CourseRelationshipSerializer
     permission_classes = (IsAuthenticated,)
 
@@ -87,7 +101,13 @@ class GradeViewSet(mixins.CreateModelMixin, viewsets.ReadOnlyModelViewSet):
     serializer_class = api.serializers.GradeSerializer
     permission_classes = (IsAuthenticated,)
 
-    filterset_fields = ('rel',)
+    filterset_fields = ('rel', 'rel__course')
+
+    def get_queryset(self):
+        qs = super(GradeViewSet, self).get_queryset()
+        if self.action == 'list':
+            qs = qs.select_related('rel')
+        return qs
 
     def get_serializer_class(self):
         if self.action == 'get_comment':

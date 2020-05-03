@@ -24,6 +24,9 @@ class User(AbstractUser):
         'last_name',
     )
 
+    class Meta:
+        ordering = ('-id',)
+
 
 class Course(models.Model):
     name = models.CharField(max_length=255, null=False, blank=False)
@@ -31,7 +34,13 @@ class Course(models.Model):
     reward = models.CharField(max_length=255, null=False, blank=False)
     is_finished = models.BooleanField(default=False)
 
-    SERIALIZED_FIELDS = '__all__'
+    SERIALIZED_FIELDS = (
+        'id',
+        'name',
+        'description',
+        'reward',
+        'is_finished',
+    )
 
     def get_user_grade(self, user):
         rel = self.uc_rels.filter(user=user).prefetch_related('grades').first()
@@ -44,13 +53,21 @@ class Course(models.Model):
 
         return grade
 
+    class Meta:
+        ordering = ('-id',)
+
 
 class Grade(models.Model):
     value = models.FloatField(null=False, blank=False)
     rel = models.ForeignKey('UserCourseRelationship', related_name='grades', on_delete=models.CASCADE)
     comment = models.CharField(max_length=255, null=False, blank=False)
 
-    SERIALIZED_FIELDS = '__all__'
+    SERIALIZED_FIELDS = (
+        'id',
+        'value',
+        'rel',
+        'comment',
+    )
 
 
 class UserCourseRelationship(models.Model):
@@ -66,4 +83,12 @@ class UserCourseRelationship(models.Model):
         default='P',
     )
 
-    SERIALIZED_FIELDS = '__all__'
+    SERIALIZED_FIELDS = (
+        'id',
+        'user',
+        'course',
+        'level',
+    )
+
+    class Meta:
+        unique_together = ('user', 'course')
