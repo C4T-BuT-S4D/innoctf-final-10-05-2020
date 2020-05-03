@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:scoped_model/scoped_model.dart';
 
 class RegisterModel {
   final String firstName;
@@ -11,8 +10,7 @@ class RegisterModel {
 
   RegisterModel(this.firstName, this.lastName, this.username, this.password);
 
-  Map<String, dynamic> toJson() =>
-      {
+  Map<String, dynamic> toJson() => {
         'first_name': this.firstName,
         'last_name': this.lastName,
         'username': this.username,
@@ -26,8 +24,7 @@ class LoginModel {
 
   LoginModel(this.username, this.password);
 
-  Map<String, dynamic> toJson() =>
-      {
+  Map<String, dynamic> toJson() => {
         'username': this.username,
         'password': this.password,
       };
@@ -40,8 +37,7 @@ class CourseCreateModel {
 
   CourseCreateModel(this.name, this.description, this.reward);
 
-  Map<String, dynamic> toJson() =>
-      {
+  Map<String, dynamic> toJson() => {
         'name': this.name,
         'description': this.description,
         'reward': this.reward,
@@ -60,16 +56,13 @@ class CourseRelation {
       this.level);
 }
 
-class UserModel extends Model {
+class UserModel extends ChangeNotifier {
+  bool authenticated = false;
   int id = 0;
   String username = "";
   String firstName = "";
   String lastName = "";
   List<CourseRelation> courseRels = [];
-
-  static UserModel of(BuildContext context) {
-    return ScopedModel.of<UserModel>(context);
-  }
 
   void parseResponse(response) {
     final data = jsonDecode(response.body);
@@ -88,6 +81,8 @@ class UserModel extends Model {
       );
       courseRels.add(parsedRel);
     }
+    authenticated = true;
+    notifyListeners();
   }
 
   String fullName() {

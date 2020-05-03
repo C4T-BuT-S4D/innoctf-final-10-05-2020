@@ -40,7 +40,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
     );
   }
 
-  void claimReward(id) async {
+  claimReward(id) async {
     final response = await Session.get('/courses/$id/reward/');
     String title = "";
     if (response.statusCode == 200) {
@@ -70,8 +70,8 @@ class _CourseListScreenState extends State<CourseListScreen> {
     );
   }
 
-  Future<void> enrollCourse(BuildContext context,
-      Map<String, dynamic> course) async {
+  Future<void> enrollCourse(
+      BuildContext context, Map<String, dynamic> course) async {
     final data = {
       'course': course['id'],
     };
@@ -113,24 +113,24 @@ class _CourseListScreenState extends State<CourseListScreen> {
         final response = snapshot.data;
         if (response == null) {
           WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => Navigator.of(context).pushNamed('/'));
+              (_) => Navigator.of(context).pushNamed('/'));
           return CircularProgressIndicator();
         }
         if (response.statusCode == 401) {
           WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => Navigator.of(context).pushNamed('/login'));
+              (_) => Navigator.of(context).pushNamed('/login'));
           return CircularProgressIndicator();
         }
 
         if (response.statusCode == 404) {
           WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => Navigator.of(context).pushNamed('/courses'));
+              (_) => Navigator.of(context).pushNamed('/courses'));
           return CircularProgressIndicator();
         }
 
         if (response.statusCode != 200) {
           WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => Navigator.of(context).pushNamed('/'));
+              (_) => Navigator.of(context).pushNamed('/'));
           return CircularProgressIndicator();
         }
 

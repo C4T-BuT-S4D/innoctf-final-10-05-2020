@@ -6,29 +6,30 @@ import 'package:front/users/list.dart';
 import 'package:front/users/login.dart';
 import 'package:front/users/profile.dart';
 import 'package:front/users/register.dart';
+import 'package:provider/provider.dart';
 import 'menu.dart';
 import 'models.dart';
-import 'package:scoped_model/scoped_model.dart';
 
 void main() => runApp(DivnikApp());
 
 class DivnikApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return new ScopedModel<UserModel>(
-        model: new UserModel(),
-        child: MaterialApp(
-          routes: {
-            '/register': (context) => RegisterScreen(),
-            '/login': (context) => LoginScreen(),
-            '/users': (context) => UserListScreen(),
-            '/user': (context) => UserProfileScreen(),
-            '/course': (context) => CourseViewScreen(),
-            '/courses': (context) => CourseListScreen(),
-            '/course_create': (context) => CourseCreateScreen(),
-          },
-          home: WelcomeScreen(),
-        ));
+    return ChangeNotifierProvider(
+      create: (context) => UserModel(),
+      child: MaterialApp(
+        routes: {
+          '/register': (context) => RegisterScreen(),
+          '/login': (context) => LoginScreen(),
+          '/users': (context) => UserListScreen(),
+          '/user': (context) => UserProfileScreen(),
+          '/course': (context) => CourseViewScreen(),
+          '/courses': (context) => CourseListScreen(),
+          '/course_create': (context) => CourseCreateScreen(),
+        },
+        home: WelcomeScreen(),
+      ),
+    );
   }
 }
 

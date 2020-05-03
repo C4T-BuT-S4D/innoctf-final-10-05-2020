@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:front/session.dart';
 import 'package:http/http.dart';
+import 'package:provider/provider.dart';
 
 import 'models.dart';
 
@@ -19,56 +20,47 @@ class DynamicAppBar extends StatefulWidget implements PreferredSizeWidget {
 class _DynamicAppBarState extends State<DynamicAppBar> {
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Response>(
-      future: Session.setCurrentUser(context),
-      builder: (context, snapshot) {
-        final logRegAppBar = AppBar(
-          title: const Text("Divnik"),
-          actions: <Widget>[
-            FlatButton(
-              color: Colors.blue,
-              textColor: Colors.white,
-              onPressed: () {
-                Navigator.of(context).pushNamed("/login");
-              },
-              child: Text('Login'),
-            ),
-            FlatButton(
-              color: Colors.blue,
-              textColor: Colors.white,
-              onPressed: () {
-                Navigator.of(context).pushNamed("/register");
-              },
-              child: Text('Register'),
-            ),
-          ],
-        );
-        if (snapshot.connectionState != ConnectionState.done) {
-          return logRegAppBar;
+    return Consumer<UserModel>(
+      builder: (context, user, child) {
+        if (!user.authenticated) {
+          return AppBar(
+            title: const Text("Divnik"),
+            actions: <Widget>[
+              FlatButton(
+                color: Colors.blue,
+                textColor: Colors.white,
+                onPressed: () {
+                  Navigator.of(context).pushNamed("/login");
+                },
+                child: Text('Login'),
+              ),
+              FlatButton(
+                color: Colors.blue,
+                textColor: Colors.white,
+                onPressed: () {
+                  Navigator.of(context).pushNamed("/register");
+                },
+                child: Text('Register'),
+              ),
+            ],
+          );
+          ;
+        } else {
+          return AppBar(
+            title: const Text("Divnik"),
+            actions: <Widget>[
+              FlatButton(
+                color: Colors.blue,
+                textColor: Colors.white,
+                onPressed: () {
+                  Navigator.of(context)
+                      .pushNamed('/user', arguments: {'id': user.id});
+                },
+                child: Text(user.username),
+              ),
+            ],
+          );
         }
-        final response = snapshot.data;
-        if (response.statusCode ~/ 100 == 4) {
-          return logRegAppBar;
-        }
-
-        final user = UserModel.of(context);
-
-        final userAppBar = AppBar(
-          title: const Text("Divnik"),
-          actions: <Widget>[
-            FlatButton(
-              color: Colors.blue,
-              textColor: Colors.white,
-              onPressed: () {
-                Navigator.of(context)
-                    .pushNamed('/user', arguments: {'id': user.id});
-              },
-              child: Text(user.username),
-            ),
-          ],
-        );
-
-        return userAppBar;
       },
     );
   }

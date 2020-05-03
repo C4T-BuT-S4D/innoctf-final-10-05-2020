@@ -43,10 +43,7 @@ class _LoginFormState extends State<LoginForm> {
         children: [
           Text(
             'Login',
-            style: Theme
-                .of(context)
-                .textTheme
-                .headline4,
+            style: Theme.of(context).textTheme.headline4,
           ),
           Padding(
             padding: EdgeInsets.all(8.0),
@@ -64,11 +61,11 @@ class _LoginFormState extends State<LoginForm> {
           ),
           errorText != ""
               ? Padding(
-              padding: EdgeInsets.all(12.0),
-              child: Text(
-                errorText,
-                style: TextStyle(color: Colors.red),
-              ))
+                  padding: EdgeInsets.all(12.0),
+                  child: Text(
+                    errorText,
+                    style: TextStyle(color: Colors.red),
+                  ))
               : Text(""),
           FlatButton(
             color: Colors.blue,
@@ -96,6 +93,7 @@ class _LoginFormState extends State<LoginForm> {
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body);
         Session.token = data['token'];
+        Session.setCurrentUser(context);
         Navigator.of(context).pushNamed('/');
       } else {
         errorText = resp.body;

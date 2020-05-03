@@ -7,14 +7,15 @@ import 'package:front/menu.dart';
 import 'package:front/models.dart';
 import 'package:front/session.dart';
 import 'package:http/http.dart';
+import 'package:provider/provider.dart';
 
 class CourseDataResponse {
   final Response courseResponse;
   final Response gradesResponse;
   final Response relationsResponse;
 
-  CourseDataResponse(this.courseResponse, this.gradesResponse,
-      this.relationsResponse);
+  CourseDataResponse(
+      this.courseResponse, this.gradesResponse, this.relationsResponse);
 
   int getErrorStatusCode() {
     if (courseResponse.statusCode != 200) {
@@ -100,11 +101,11 @@ class _CourseGradeAlertDialogState extends State<CourseGradeAlertDialog> {
           ),
           _errorText != ""
               ? Padding(
-              padding: EdgeInsets.all(12.0),
-              child: Text(
-                _errorText,
-                style: TextStyle(color: Colors.red),
-              ))
+                  padding: EdgeInsets.all(12.0),
+                  child: Text(
+                    _errorText,
+                    style: TextStyle(color: Colors.red),
+                  ))
               : Text(""),
         ],
       ),
@@ -156,13 +157,10 @@ class CourseViewScreen extends StatefulWidget {
 
 class _CourseViewScreenState extends State<CourseViewScreen> {
   Future<CourseDataResponse> getCourse(BuildContext context) async {
-    final Map<String, dynamic> args = ModalRoute
-        .of(context)
-        .settings
-        .arguments;
+    final Map<String, dynamic> args = ModalRoute.of(context).settings.arguments;
     if (args == null) {
       WidgetsBinding.instance.addPostFrameCallback(
-              (_) => Navigator.of(context).pushNamed('/courses'));
+          (_) => Navigator.of(context).pushNamed('/courses'));
       return null;
     }
     final courseId = args['id'];
@@ -186,24 +184,26 @@ class _CourseViewScreenState extends State<CourseViewScreen> {
         final response = snapshot.data;
         if (response == null) {
           WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => Navigator.of(context).pushNamed('/courses'));
+              (_) => Navigator.of(context).pushNamed('/courses'));
           return CircularProgressIndicator();
         }
 
         if (response.getErrorStatusCode() == 401) {
           WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => Navigator.of(context).pushNamed('/login'));
+              (_) => Navigator.of(context).pushNamed('/login'));
           return CircularProgressIndicator();
         }
 
         if (response.getErrorStatusCode() != 200) {
           WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => Navigator.of(context).pushNamed('/courses'));
+              (_) => Navigator.of(context).pushNamed('/courses'));
           return CircularProgressIndicator();
         }
 
-        final user = UserModel.of(context);
-        if (user.id < 1) {
+        final user = Provider.of<UserModel>(context, listen: true);
+        if (!user.authenticated) {
+          WidgetsBinding.instance.addPostFrameCallback(
+              (_) => Navigator.of(context).pushNamed('/login'));
           return CircularProgressIndicator();
         }
 
@@ -212,10 +212,10 @@ class _CourseViewScreenState extends State<CourseViewScreen> {
         final relationsData = jsonDecode(response.relationsResponse.body);
 
         final participants =
-        relationsData.expand((e) => [if (e['level'] == 'P') e]).toList();
+            relationsData.expand((e) => [if (e['level'] == 'P') e]).toList();
 
         final teachers =
-        relationsData.expand((e) => [if (e['level'] == 'T') e]).toList();
+            relationsData.expand((e) => [if (e['level'] == 'T') e]).toList();
 
         Map<int, List> mappedGrades = {};
         for (final each in gradeData) {
@@ -238,8 +238,7 @@ class _CourseViewScreenState extends State<CourseViewScreen> {
           if (mappedGrades[part['user']] != null) {
             gradeButtons = mappedGrades[part['user']]
                 .map(
-                  (e) =>
-                  FlatButton(
+                  (e) => FlatButton(
                     onPressed: () async {
                       await requestGradeComment(e['id']);
                     },
@@ -250,7 +249,7 @@ class _CourseViewScreenState extends State<CourseViewScreen> {
                       vertical: 5.0,
                     ),
                   ),
-            )
+                )
                 .toList();
           }
           dataRows.add(
@@ -315,14 +314,14 @@ class _CourseViewScreenState extends State<CourseViewScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      'Course teachers:',
-                      style: TextStyle(
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ] +
+                        Text(
+                          'Course teachers:',
+                          style: TextStyle(
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ] +
                       teachersButtons,
                 ),
                 Table(
@@ -331,26 +330,25 @@ class _CourseViewScreenState extends State<CourseViewScreen> {
                 ),
                 isTeacher
                     ? Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: FlatButton(
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) =>
-                            CourseGradeAlertDialog(
-                              participants: participants,
-                              courseId: courseData['id'],
-                            ),
-                      );
-                    },
-                    child: Text('Grade a participant'),
-                    color: Colors.blue,
-                  ),
-                )
+                        padding: const EdgeInsets.all(12.0),
+                        child: FlatButton(
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => CourseGradeAlertDialog(
+                                participants: participants,
+                                courseId: courseData['id'],
+                              ),
+                            );
+                          },
+                          child: Text('Grade a participant'),
+                          color: Colors.blue,
+                        ),
+                      )
                     : Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Text('You are a participant of this course'),
-                ),
+                        padding: const EdgeInsets.all(12.0),
+                        child: Text('You are a participant of this course'),
+                      ),
               ],
             ),
           ),
