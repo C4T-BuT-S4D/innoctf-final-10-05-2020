@@ -1,0 +1,25 @@
+version: '2.4'
+
+services:
+  node:
+    build:
+      context: .
+    restart: on-failure
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:3.6.18
+    volumes:
+      - ./db:/data/db
+    restart: on-failure
+
+  nginx:
+    image: nginx:1.18.0-alpine
+    volumes:
+      - ./front:/front:ro
+      - ./nginx/app.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/proxy_params:/etc/nginx/proxy_params
+    restart: on-failure
+    ports:
+      - "6091:80"

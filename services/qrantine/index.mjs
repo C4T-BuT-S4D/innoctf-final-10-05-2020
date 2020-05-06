@@ -13,7 +13,7 @@ const app = express();
 const MongoStore = ConnectMongo(session);
 
 mongo.MongoClient.connect(
-    'mongodb://localhost:27017',
+    'mongodb://mongo:27017',
     {
         poolSize: 10,
         useUnifiedTopology: true,
@@ -240,8 +240,6 @@ mongo.MongoClient.connect(
                 });
                 return;
             }
-
-            console.log(code.code);
 
             const codeD = deserialize(code.code);
 

@@ -116,7 +116,6 @@ function deserialize(value) {
     }
 
     if (value.i__type === 'a') {
-        console.log(value);
         let result = [];
         for (const item of value.i__value) {
             result.push(deserialize(item));
