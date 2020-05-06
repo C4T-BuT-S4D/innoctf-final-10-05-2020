@@ -2,10 +2,18 @@ version: '2'
 services:
   db:
     build: db
-    ports:
-      - "3301:3301"
+#    ports:
+#      - "3301:3301"
     volumes:
       - "db-data:/var/lib/tarantool"
+
+  app:
+    build: app/src
+    ports:
+    - "8080:8080"
+    depends_on:
+      - db
+
 
 volumes:
   db-data:

@@ -24,7 +24,7 @@ $app = new \Slim\App($c);
 $container = $app->getContainer();
 
 $container['db'] = function ($container) {
-    return Client::fromDefaults();
+    return Client::fromDsn("tcp://db");
 };
 
 $errorHandler = function ($request, $response, $exception) {
@@ -153,18 +153,18 @@ $app->get('/api/posts/latest', function (Request $request, Response $response, a
 
 $app->patch('/api/posts/{post}', function (Request $request, Response $response, array $args) {
     assert(!empty($_SESSION['user']), 'Неавторизован');
-    $post = $args['post'];
+    $post = intval($args['post']);
 
     /** @var Client $db */
     $db = $this->get('db');
-    $post = $db->call('findPost', $post);
+    $post = $db->call('findPost', $post)[0];
 
     if (is_null($post)) {
         return jsonError($response, "Not found", 404);
     }
 
-    assert($post[2] == $_SESSION['user'], "Вы не можете редактировать запись ${post[2]}");
-    assert($post[4] == true, "Вы не можете редактировать опубликованную запись");
+    assert($post[1] == $_SESSION['user'], "Вы не можете редактировать запись ${post[2]}");
+    assert($post[3] == true, "Вы не можете редактировать опубликованную запись");
 
     $body = $request->getParsedBody();
 
@@ -172,10 +172,43 @@ $app->patch('/api/posts/{post}', function (Request $request, Response $response,
     assert(!empty('text'), 'Поле текст не должно быть пустым');
     $publish = $body['publish'] == 'true';
 
-    $post[4] = $publish;
-    $post[3] = $text;
+    $post[3] = !$publish;
+    $post[2] = $text;
 
-    return responseJson($response, $db->call('updatePost', ...$post));
+    return responseJson($response, $db->call('updatePost', ...$post)[0]);
+});
+
+$app->get('/api/posts/{post}/token', function (Request $request, Response $response, array $args) {
+    assert(!empty($_SESSION['user']), 'Неавторизован');
+    $post = intval($args['post']);
+
+    /** @var Client $db */
+    $db = $this->get('db');
+    $post = $db->call('findPost', $post)[0];
+
+    if (is_null($post)) {
+        return jsonError($response, "Not found", 404);
+    }
+
+    assert($post[1] == $_SESSION['user'], "Вы не можете получить токен для записи ${post[2]}");
+    assert($post[3] == true, "Вы не можете поделиться опубликованной записью");
+    $token = $db->call('generateToken', $post[0]);
+
+    return responseJson($response, ['token' => $token]);
+});
+
+$app->get('/api/posts/token', function (Request $request, Response $response, array $args) {
+    $token = $request->getQueryParam('token') ?? '';
+
+    /** @var Client $db */
+    $db = $this->get('db');
+    $post = $db->call('getByToken', $token)[0];
+
+    if (is_null($post)) {
+        return jsonError($response, "Not found", 404);
+    }
+
+    return responseJson($response, $post);
 });
 
 
