@@ -1,3 +1,7 @@
 .idea
+### Composer ###
+composer.phar
+/vendor/
+
 .DS_Store
 __pycache__

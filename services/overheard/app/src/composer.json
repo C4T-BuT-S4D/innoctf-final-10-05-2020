@@ -1,0 +1,7 @@
+{
+    "require": {
+        "slim/slim": "3.*",
+        "tarantool/client": "^0.7.0",
+        "rybakit/msgpack": "^0.7.0"
+    }
+}

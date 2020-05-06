@@ -1,0 +1,11 @@
+version: '2'
+services:
+  db:
+    build: db
+    ports:
+      - "3301:3301"
+    volumes:
+      - "db-data:/var/lib/tarantool"
+
+volumes:
+  db-data:
