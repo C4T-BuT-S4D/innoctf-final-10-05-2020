@@ -54,7 +54,10 @@ function inject() {
                 i__class: className,
             };
         }
-        return this;
+        return {
+            i__type: 'o',
+            i__value: result
+        };
     };
 }
 

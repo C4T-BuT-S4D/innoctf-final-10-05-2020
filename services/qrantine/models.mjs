@@ -4,27 +4,6 @@ class Serializer {
     }
 }
 
-class Address extends Serializer {
-    constructor(addr) {
-        super();
-        this.addr = addr;
-    }
-}
-
-class Home extends Serializer {
-    constructor(address) {
-        super();
-        this.address = address;
-    }
-}
-
-class Work extends Serializer {
-    constructor(address) {
-        super();
-        this.address = address;
-    }
-}
-
 class User extends Serializer {
     constructor(username, password, home) {
         super();
@@ -43,4 +22,4 @@ class Code extends Serializer {
     }
 }
 
-export { Address, Home, Work, User, Code };
+export { User, Code };

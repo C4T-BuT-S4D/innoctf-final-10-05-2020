@@ -1,6 +1,5 @@
 import * as models from './models.mjs';
 import { inject, serialize, deserialize } from './serializer.mjs';
-inject();
 
 import { isString } from './utils.mjs';
 
@@ -11,6 +10,23 @@ import ConnectMongo from 'connect-mongo';
 
 const app = express();
 const MongoStore = ConnectMongo(session);
+
+const go = async (request) => {
+    let cnt = 20;
+    while (cnt > 0) {
+        try {
+            const res = await request();
+            return res;
+        } catch (err) {
+            console.error('ERROR', err);
+            cnt -= 1;
+            if (cnt < 0) {
+                throw "Can't process requet";
+            }
+            inject();
+        }
+    }
+}
 
 mongo.MongoClient.connect(
     'mongodb://mongo:27017',
@@ -84,7 +100,7 @@ mongo.MongoClient.connect(
 
             await req.db.collection('users').insertOne({
                 username,
-                user: serialize(new models.User(username, password, home)),
+                user: await go(() => serialize(new models.User(username, password, home))),
             });
 
             res.json({
@@ -127,7 +143,7 @@ mongo.MongoClient.connect(
                 return;
             }
 
-            const userD = deserialize(user.user);
+            const userD = await go(() => deserialize(user.user));
 
             if (userD.password !== password) {
                 res.status(400).json({
@@ -184,18 +200,18 @@ mongo.MongoClient.connect(
                 return;
             }
 
-            const home = deserialize(
+            const home = (await go(async () => deserialize(
                 (
                     await req.db.collection('users').findOne({
                         username: req.session.username,
                     })
                 ).user
-            ).home;
+            ))).home;
 
             const id = (
                 await req.db.collection('codes').insertOne({
                     time: new Date().getTime(),
-                    code: serialize(new models.Code(qr, home, work)),
+                    code: await go(() => serialize(new models.Code(qr, home, work))),
                 })
             ).insertedId;
 
@@ -241,7 +257,7 @@ mongo.MongoClient.connect(
                 return;
             }
 
-            const codeD = deserialize(code.code);
+            const codeD = await go(() => deserialize(code.code));
 
             res.json({
                 ok: codeD.qr,
