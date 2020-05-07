@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-#define SHA256_BLOCK_SIZE 32            // SHA256 outputs a 32 byte digest
+#define BLOCK_SIZE 32            // SHA256 outputs a 32 byte digest
 
 /**************************** DATA TYPES ****************************/
 typedef unsigned char BYTE;             // 8-bit byte
@@ -15,14 +15,14 @@ typedef struct {
     WORD datalen;
     unsigned long long bitlen;
     WORD state[8];
-} SHA256_CTX;
+} CTX;
 
 /*********************** FUNCTION DECLARATIONS **********************/
-void sha256_init(SHA256_CTX *ctx);
+void init(CTX *ctx);
 
-void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len);
+void update(CTX *ctx, const BYTE *data, size_t len);
 
-void sha256_final(SHA256_CTX *ctx, BYTE hash[]);
+void final(CTX *ctx, BYTE *hash);
 
 #include <stdlib.h>
 #include <memory.h>
@@ -51,7 +51,7 @@ static const WORD k[64] = {
 };
 
 /*********************** FUNCTION DEFINITIONS ***********************/
-void sha256_transform(SHA256_CTX *ctx, const BYTE data[]) {
+void transform(CTX *ctx, const BYTE *data) {
     WORD a, b, c, d, e, f, g, h, i, j, t1, t2, m[64];
 
     for (i = 0, j = 0; i < 16; ++i, j += 4)
@@ -91,7 +91,7 @@ void sha256_transform(SHA256_CTX *ctx, const BYTE data[]) {
     ctx->state[7] += h;
 }
 
-void sha256_init(SHA256_CTX *ctx) {
+void init(CTX *ctx) {
     ctx->datalen = 0;
     ctx->bitlen = 0;
     ctx->state[0] = 0x6a09e667;
@@ -104,21 +104,21 @@ void sha256_init(SHA256_CTX *ctx) {
     ctx->state[7] = 0x5be0cd19;
 }
 
-void sha256_update(SHA256_CTX *ctx, const BYTE data[], size_t len) {
+void update(CTX *ctx, const BYTE *data, size_t len) {
     WORD i;
 
     for (i = 0; i < len; ++i) {
         ctx->data[ctx->datalen] = data[i];
         ctx->datalen++;
         if (ctx->datalen == 64) {
-            sha256_transform(ctx, ctx->data);
+            transform(ctx, ctx->data);
             ctx->bitlen += 512;
             ctx->datalen = 0;
         }
     }
 }
 
-void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
+void final(CTX *ctx, BYTE *hash) {
     WORD i;
 
     i = ctx->datalen;
@@ -132,7 +132,7 @@ void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
         ctx->data[i++] = 0x80;
         while (i < 64)
             ctx->data[i++] = 0x00;
-        sha256_transform(ctx, ctx->data);
+        transform(ctx, ctx->data);
         memset(ctx->data, 0, 56);
     }
 
@@ -146,7 +146,7 @@ void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
     ctx->data[58] = ctx->bitlen >> 40;
     ctx->data[57] = ctx->bitlen >> 48;
     ctx->data[56] = ctx->bitlen >> 56;
-    sha256_transform(ctx, ctx->data);
+    transform(ctx, ctx->data);
 
     // Since this implementation uses little endian byte ordering and SHA uses big endian,
     // reverse all the bytes when copying the final state to the output hash.
@@ -162,38 +162,64 @@ void sha256_final(SHA256_CTX *ctx, BYTE hash[]) {
     }
 }
 
-void generateToken(unsigned int id, char *buffer) {
-    unsigned char sha256[SHA256_BLOCK_SIZE + 4];
-    SHA256_CTX ctx;
-    unsigned char bytes[4]; // or char, but unsigned char is better
 
-    bytes[0] = id >> 24 & 0xFF;
-    bytes[1] = id >> 16 & 0xFF;
-    bytes[2] = id >> 8 & 0xFF;
-    bytes[3] = id & 0xFF;
-    sha256_init(&ctx);
-    sha256_update(&ctx, (unsigned char *) bytes,
-                  4);
-    sha256_final(&ctx, sha256);
-    for (int i = 0; i < 4; i++) {
-        sha256[SHA256_BLOCK_SIZE + i] = bytes[i];
+void calc(const char *source, char *out) {
+    CTX ctx;
+    init(&ctx);
+    update(&ctx, (const unsigned char *) source, strlen(source));
+    unsigned char res[BLOCK_SIZE];
+    final(&ctx, res);
+    for (int i = 0; i < BLOCK_SIZE; i++) {
+        sprintf(out + (i * 2), "%02x", res[i]);
     }
-    for (int i = 0; i < SHA256_BLOCK_SIZE + 4; i++) {
-        sprintf(buffer + (i * 2), "%02x", sha256[i]);
+}
+
+void generateToken(unsigned int id, const char *key, unsigned int key_size, char *buffer) {
+    char idHex[9];
+    sprintf(idHex, "%08x", id);
+    unsigned int idLen = strlen(idHex);
+    unsigned int concatLen = strlen(idHex) + key_size;
+    char *concat = (char *) malloc(sizeof(char) * (concatLen));
+    memset(concat, 0, concatLen);
+    strncpy(concat, idHex, idLen);
+    strncpy(concat + idLen, key, key_size);
+    concat[concatLen] = '\0';
+    calc(concat, buffer);
+    free(concat);
+    strncat(buffer, idHex, idLen);
+    buffer[BLOCK_SIZE * 2 + idLen] = '\0';
+}
+
+unsigned int idFromToken(const char *token, unsigned int tok_size, const char *key, unsigned int key_size) {
+    unsigned int concatLen = key_size + (tok_size - BLOCK_SIZE * 2);
+    char *concat = (char *) malloc(sizeof(char) * (concatLen));
+    memset(concat, 0, concatLen);
+    strncpy(concat, token + BLOCK_SIZE * 2, tok_size - BLOCK_SIZE * 2);
+    strncpy(concat + tok_size - BLOCK_SIZE * 2, key, key_size);
+    concat[concatLen] = '\0';
+    char res[BLOCK_SIZE * 2 + 1];
+    calc(concat, res);
+    free(concat);
+    printf("Token: %s; Res: %s\n", token, res);
+    if (strncmp(token, res, BLOCK_SIZE * 2) == 0) {
+        return strtoul(token + BLOCK_SIZE * 2, NULL, 16);
     }
-    buffer[(SHA256_BLOCK_SIZE + 4) * 2] = '\0';
+    return 0;
 }
 
 int GenerateToken(box_function_ctx_t *ctx, const char *args, const char *args_end)
 {
     uint32_t arg_count = mp_decode_array(&args);
-    if (arg_count != 1) {
+    if (arg_count != 2) {
         return 1;
     }
     uint32_t val = 1;
+    uint32_t keyLength;
+    const char *key;
     val = mp_decode_uint(&args);
-    char buffer[73];
-    generateToken(val, buffer);
+    key = mp_decode_str(&args, &keyLength);
+    char buffer[100];
+    generateToken(val, key, keyLength, buffer);
     char tuple_buf[1024];
     char *tuple_end = tuple_buf;
     tuple_end = mp_encode_str(tuple_end, buffer, strlen(buffer));
@@ -201,35 +227,23 @@ int GenerateToken(box_function_ctx_t *ctx, const char *args, const char *args_en
     return box_return_tuple(ctx, tuple);
 }
 
-unsigned int idFromToken(const char *token)
-{
-    if (strlen(token) < (SHA256_BLOCK_SIZE + 4) * 2) {
-        return 0;
-    }
-    char numbuf[8];
-    strncpy(numbuf, token + SHA256_BLOCK_SIZE * 2, 8);
-    unsigned int num = (unsigned int) strtol(numbuf, NULL, 16);
-    char buffer[73];
-    generateToken(num, buffer);
-    if (strncmp(buffer, token, (SHA256_BLOCK_SIZE * 2)) == 0) {
-        return num;
-    }
-    return 0;
-}
-
 int GetByToken(box_function_ctx_t *ctx, const char *args, const char *args_end)
 {
     uint32_t arg_count = mp_decode_array(&args);
-    if (arg_count != 1) {
+    if (arg_count != 2) {
         return 1;
     }
-    const char *tokenString;
+    char *tokenString;
     uint32_t tokenLength;
     tokenString = mp_decode_str(&args, &tokenLength);
-    if (tokenLength < (SHA256_BLOCK_SIZE + 4) * 2) {
+    if (tokenLength < (BLOCK_SIZE + 4) * 2) {
         return 0;
     }
-    unsigned int post_id = idFromToken(tokenString);
+    const char* key;
+    uint32_t keyLength;
+    key = mp_decode_str(&args, &keyLength);
+    tokenString[tokenLength] = '\0';
+    unsigned int post_id = idFromToken(tokenString, tokenLength, key, keyLength);
     if (post_id == 0) {
         return 0;
     }
@@ -239,3 +253,4 @@ int GetByToken(box_function_ctx_t *ctx, const char *args, const char *args_end)
     struct tuple *tuple = box_tuple_new(box_tuple_format_default(), tuple_buf, tuple_end);
     return box_return_tuple(ctx, tuple);
 }
+

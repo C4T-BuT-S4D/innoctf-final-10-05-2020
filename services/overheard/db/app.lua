@@ -13,12 +13,10 @@ box.once("bootstrap", function()
    s=box.schema.space.create('posts');
    s:create_index('primary', { type = 'TREE', sequence='postId', parts = {{field = 1, type = 'unsigned'}}})
    s:create_index('user', { type = 'TREE', unique=false, parts = {{field = 2, type = 'string'}}})
-   box.schema.func.create('easy', {language = 'C'})
-   box.schema.user.grant('guest', 'execute', 'function', 'easy')
-   box.schema.func.create('easy.GenerateToken', {language = 'C'})
-   box.schema.user.grant('guest', 'execute', 'function', 'easy.GenerateToken')
-   box.schema.func.create('easy.GetByToken', {language = 'C'})
-   box.schema.user.grant('guest', 'execute', 'function', 'easy.GetByToken')
+   box.schema.func.create('keygen.GenerateToken', {language = 'C'})
+   box.schema.user.grant('guest', 'execute', 'function', 'keygen.GenerateToken')
+   box.schema.func.create('keygen.GetByToken', {language = 'C'})
+   box.schema.user.grant('guest', 'execute', 'function', 'keygen.GetByToken')
 end)
 
 net_box = require('net.box')
@@ -70,12 +68,12 @@ end
 
 function generateToken(post_id)
     if (type(post_id) ~= 'number') then return nil end
-    return capi_connection:call('easy.GenerateToken', {post_id})[1]
+    return capi_connection:call('keygen.GenerateToken', {post_id, 'asd'})[1]
 end
 
 function getByToken(token)
     if (type(token) ~= 'string') then return nil end
-    post_id = capi_connection:call('easy.GetByToken', {token})
+    post_id = capi_connection:call('keygen.GetByToken', {token, 'asd'})[1]
     if (post_id == nil) then return nil end
     return findPost(post_id)
 end

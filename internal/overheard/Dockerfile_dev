@@ -4,5 +4,7 @@ WORKDIR /opt/tarantool
 RUN apk add msgpuck-dev --update-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ --allow-untrusted
 RUN cp /usr/lib/libmsgpuck.a libmsgpuck.a
 COPY app.lua .
-COPY keygen.so .
+COPY keygen.c .
+RUN CPATH=/usr/local/include/tarantool gcc -Wall -g -shared -o keygen.so -fPIC keygen.c libmsgpuck.a
 CMD ["tarantool", "app.lua"]
+
