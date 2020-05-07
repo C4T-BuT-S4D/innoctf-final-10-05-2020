@@ -1,7 +1,5 @@
 FROM python:3.7
 
-MAINTAINER pomo_mondreganto
-
 ENV PYTHONUNBUFFERED=1
 
 #RUN apk add libpq-dev
