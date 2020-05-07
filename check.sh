@@ -3,6 +3,7 @@
 declare -A VULNS
 VULNS=(
   [divnik]=2
+  [overheard]=2
 )
 
 if [ -z "$RUNS" ]; then
