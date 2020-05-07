@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto+Mono&display=swap');
+
+@import './reset.scss';
+@import './utilities';
+
+html, body {
+    height: 100%;
+    overflow-anchor: none;
+    overflow-wrap: break-word;
+    font-size: 0.9em;
+}
+
+body:not(.dark-theme) {
+    @include set-theme(def);
+    background-color: $white;
+    color: $black;
+}
+
+body.dark-theme {
+    @include set-theme(dark);
+    background-color: $white;
+    color: $black;
+}
+
+body {
+    font-family: 'Roboto Mono', monospace;
+}
+
+@import '@/styles/components/button.scss';

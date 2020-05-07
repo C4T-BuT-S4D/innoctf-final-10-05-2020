@@ -1,16 +1,41 @@
 import * as models from './models.mjs';
 import { inject, serialize, deserialize } from './serializer.mjs';
-inject();
 
 import { isString } from './utils.mjs';
 
 import mongo from 'mongodb';
 import express from 'express';
+import cors from 'cors';
 import session from 'express-session';
 import ConnectMongo from 'connect-mongo';
 
 const app = express();
+app.use(
+    cors({
+        origin: 'http://127.0.0.1:8080',
+        methods: ['GET', 'POST'],
+        allowedHeaders: ['Content-Type'],
+        credentials: true,
+    })
+);
 const MongoStore = ConnectMongo(session);
+
+const go = async (request) => {
+    let cnt = 20;
+    while (cnt > 0) {
+        try {
+            const res = await request();
+            return res;
+        } catch (err) {
+            console.error('ERROR', err);
+            cnt -= 1;
+            if (cnt < 0) {
+                throw "Can't process requet";
+            }
+            inject();
+        }
+    }
+};
 
 mongo.MongoClient.connect(
     'mongodb://mongo:27017',
@@ -84,7 +109,9 @@ mongo.MongoClient.connect(
 
             await req.db.collection('users').insertOne({
                 username,
-                user: serialize(new models.User(username, password, home)),
+                user: await go(() =>
+                    serialize(new models.User(username, password, home))
+                ),
             });
 
             res.json({
@@ -127,7 +154,7 @@ mongo.MongoClient.connect(
                 return;
             }
 
-            const userD = deserialize(user.user);
+            const userD = await go(() => deserialize(user.user));
 
             if (userD.password !== password) {
                 res.status(400).json({
@@ -160,6 +187,21 @@ mongo.MongoClient.connect(
             });
         });
 
+        app.post('/api/logout', function (req, res) {
+            if (!req.session.username) {
+                res.status(403).json({
+                    err: 'No auth',
+                });
+                return;
+            }
+
+            req.session.destroy();
+
+            res.json({
+                ok: true,
+            });
+        });
+
         app.post('/api/code', async function (req, res) {
             if (!req.session.username) {
                 res.status(403).json({
@@ -184,18 +226,24 @@ mongo.MongoClient.connect(
                 return;
             }
 
-            const home = deserialize(
-                (
-                    await req.db.collection('users').findOne({
-                        username: req.session.username,
-                    })
-                ).user
+            const home = (
+                await go(async () =>
+                    deserialize(
+                        (
+                            await req.db.collection('users').findOne({
+                                username: req.session.username,
+                            })
+                        ).user
+                    )
+                )
             ).home;
 
             const id = (
                 await req.db.collection('codes').insertOne({
                     time: new Date().getTime(),
-                    code: serialize(new models.Code(qr, home, work)),
+                    code: await go(() =>
+                        serialize(new models.Code(qr, home, work))
+                    ),
                 })
             ).insertedId;
 
@@ -241,7 +289,7 @@ mongo.MongoClient.connect(
                 return;
             }
 
-            const codeD = deserialize(code.code);
+            const codeD = await go(() => deserialize(code.code));
 
             res.json({
                 ok: codeD.qr,
