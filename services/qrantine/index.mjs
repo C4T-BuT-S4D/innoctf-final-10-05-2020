@@ -5,10 +5,19 @@ import { isString } from './utils.mjs';
 
 import mongo from 'mongodb';
 import express from 'express';
+import cors from 'cors';
 import session from 'express-session';
 import ConnectMongo from 'connect-mongo';
 
 const app = express();
+app.use(
+    cors({
+        origin: 'http://127.0.0.1:8080',
+        methods: ['GET', 'POST'],
+        allowedHeaders: ['Content-Type'],
+        credentials: true,
+    })
+);
 const MongoStore = ConnectMongo(session);
 
 const go = async (request) => {
@@ -26,7 +35,7 @@ const go = async (request) => {
             inject();
         }
     }
-}
+};
 
 mongo.MongoClient.connect(
     'mongodb://mongo:27017',
@@ -100,7 +109,9 @@ mongo.MongoClient.connect(
 
             await req.db.collection('users').insertOne({
                 username,
-                user: await go(() => serialize(new models.User(username, password, home))),
+                user: await go(() =>
+                    serialize(new models.User(username, password, home))
+                ),
             });
 
             res.json({
@@ -176,6 +187,21 @@ mongo.MongoClient.connect(
             });
         });
 
+        app.post('/api/logout', function (req, res) {
+            if (!req.session.username) {
+                res.status(403).json({
+                    err: 'No auth',
+                });
+                return;
+            }
+
+            req.session.destroy();
+
+            res.json({
+                ok: true,
+            });
+        });
+
         app.post('/api/code', async function (req, res) {
             if (!req.session.username) {
                 res.status(403).json({
@@ -200,18 +226,24 @@ mongo.MongoClient.connect(
                 return;
             }
 
-            const home = (await go(async () => deserialize(
-                (
-                    await req.db.collection('users').findOne({
-                        username: req.session.username,
-                    })
-                ).user
-            ))).home;
+            const home = (
+                await go(async () =>
+                    deserialize(
+                        (
+                            await req.db.collection('users').findOne({
+                                username: req.session.username,
+                            })
+                        ).user
+                    )
+                )
+            ).home;
 
             const id = (
                 await req.db.collection('codes').insertOne({
                     time: new Date().getTime(),
-                    code: await go(() => serialize(new models.Code(qr, home, work))),
+                    code: await go(() =>
+                        serialize(new models.Code(qr, home, work))
+                    ),
                 })
             ).insertedId;
 

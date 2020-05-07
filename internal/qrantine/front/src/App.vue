@@ -1,0 +1,20 @@
+<template>
+    <router-view />
+</template>
+
+<script>
+export default {
+    created: async function() {
+        const theme = localStorage.getItem('theme');
+        if (!this.$types.isNull(theme)) {
+            document.body.classList.add('dark-theme');
+        }
+
+        await this.$store.dispatch('UPDATE_USER');
+    },
+};
+</script>
+
+<style lang="scss">
+@import './styles/main.scss';
+</style>
