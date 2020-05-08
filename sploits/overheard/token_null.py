@@ -12,7 +12,8 @@ password = login
 s = Session()
 resp = s.post(url + '/api/register', data = {'login':login, 'password': password})
 
-latest = s.get(url + '/api/posts/latest?paginate[limit]=1').json()['posts'][0]
+latest = s.get(url + '/api/posts/latest?paginate[limit]=10').json()['posts'][0]
+
 
 latest_id = latest[0]
 

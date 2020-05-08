@@ -22,6 +22,7 @@ box.once("bootstrap", function()
    s=box.schema.space.create('posts');
    s:create_index('primary', { type = 'TREE', sequence='postId', parts = {{field = 1, type = 'unsigned'}}})
    s:create_index('user', { type = 'TREE', unique=false, parts = {{field = 2, type = 'string'}}})
+   s:create_index('draft',{ type = 'TREE', unique=false, parts = {{field = 4, type = 'boolean'}}})
    box.schema.func.create('keygen.GenerateToken', {language = 'C'})
    box.schema.user.grant('guest', 'execute', 'function', 'keygen.GenerateToken')
    box.schema.func.create('keygen.GetByToken', {language = 'C'})
@@ -31,12 +32,6 @@ end)
 net_box = require('net.box')
 capi_connection = net_box:new(3301)
 
-
-function filterRecords(records, fn)
-out = {}
-for i, p in pairs(records) do if fn(p) then out[#out + 1] = p end end
-return out
-end
 
 function addUser(login, password)
     u = box.tuple.new({login, password})
@@ -61,7 +56,7 @@ end
 
 function latestPosts(paginator)
     paginator['iterator'] = 'REQ'
-    posts = filterRecords(box.space.posts:select({}, paginator), function(p) return p[4] == false end)
+    posts = box.space.posts.index.draft:select(false, paginator)
     return posts
 end
 
