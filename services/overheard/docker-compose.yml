@@ -6,7 +6,7 @@ services:
       - "db-data:/var/lib/tarantool"
 
   app:
-    build: app/src
+    build: app
     ports:
     - "8080:80"
     depends_on:

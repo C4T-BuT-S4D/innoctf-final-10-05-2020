@@ -11,7 +11,7 @@ WORKDIR /var/www
 
 RUN composer install
 
-COPY public/ /var/www/html/
+COPY public /var/www/html/
 
 RUN a2enmod rewrite
 

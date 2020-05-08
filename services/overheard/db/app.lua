@@ -3,9 +3,18 @@
 
 clock = require('clock')
 
+function string.random(length)
+  charset = {'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
+  math.randomseed(os.time())
+  if length > 0 then return string.random(length - 1) .. charset[math.random(1, #charset)] else return "" end
+end
+
+key = string.random(15)
+
 box.cfg {
    listen = 3301
 }
+
 box.once("bootstrap", function()
    s=box.schema.space.create('users')
    s:create_index('primary', { type = 'TREE', parts = {{field = 1, type = 'string'}}})
@@ -68,12 +77,12 @@ end
 
 function generateToken(post_id)
     if (type(post_id) ~= 'number') then return nil end
-    return capi_connection:call('keygen.GenerateToken', {post_id, 'asd'})[1]
+    return capi_connection:call('keygen.GenerateToken', {post_id, key})[1]
 end
 
 function getByToken(token)
     if (type(token) ~= 'string') then return nil end
-    post_id = capi_connection:call('keygen.GetByToken', {token, 'asd'})[1]
+    post_id = capi_connection:call('keygen.GetByToken', {token, key})[1]
     if (post_id == nil) then return nil end
     return findPost(post_id)
 end
