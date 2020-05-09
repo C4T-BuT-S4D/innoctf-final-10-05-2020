@@ -2,18 +2,23 @@ version: '2'
 services:
   db:
     build: db
-#    ports:
-#      - "3301:3301"
     volumes:
       - "db-data:/var/lib/tarantool"
 
   app:
-    build: app/src
-    ports:
-    - "8080:8080"
+    build: app
     depends_on:
       - db
 
+  nginx:
+    image: nginx:1.18.0-alpine
+    volumes:
+      - ./front/build:/front/build:ro
+      - ./front/app.conf:/etc/nginx/conf.d/default.conf
+      - ./front/proxy_params:/etc/nginx/proxy_params
+    restart: on-failure
+    ports:
+      - "8080:80"
 
 volumes:
   db-data:

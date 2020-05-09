@@ -11,8 +11,7 @@ WORKDIR /var/www
 
 RUN composer install
 
-COPY public/ /var/www/html/
+COPY public /var/www/html/
 
-WORKDIR /var/www/html
+RUN a2enmod rewrite
 
-CMD ["php", "-S", "0.0.0.0:8080"]
