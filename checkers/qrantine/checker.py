@@ -71,7 +71,7 @@ class Checker(BaseChecker):
         u, p, cid, w = flag_id.split(':')
 
         self.mch.login(s, u, p)
-        self.mch.verify_code(s, cid, flag, w)
+        self.mch.verify_code(s, cid, flag, w, status=Status.CORRUPT)
 
         self.cquit(Status.OK)
 
