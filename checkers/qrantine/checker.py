@@ -44,7 +44,8 @@ class Checker(BaseChecker):
 
         self.mch.list_codes(s, cid)
 
-        self.mch.verify_code(s, cid, h, w)
+        anon = get_initialized_session()
+        self.mch.verify_code(anon, cid, h, w)
 
         self.cquit(Status.OK)
 
@@ -63,7 +64,7 @@ class Checker(BaseChecker):
 
         cid = self.mch.upload_code(s, code, w)
 
-        self.cquit(Status.OK, cid, f'{u}:{p}:{cid}:{w}')
+        self.cquit(Status.OK, f'{u}:{p}:{cid}:{w}')
 
     def get(self, flag_id, flag, vuln):
         s = get_initialized_session()
@@ -72,6 +73,9 @@ class Checker(BaseChecker):
 
         self.mch.login(s, u, p)
         self.mch.verify_code(s, cid, flag, w, status=Status.CORRUPT)
+
+        anon = get_initialized_session()
+        self.mch.verify_code(anon, cid, flag, w, status=Status.CORRUPT)
 
         self.cquit(Status.OK)
 
