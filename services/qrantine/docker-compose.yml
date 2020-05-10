@@ -7,6 +7,8 @@ services:
     restart: on-failure
     depends_on:
       - mongo
+    cpus: 0.5
+    mem_limit: 200M
 
   mongo:
     image: mongo:3.6.18

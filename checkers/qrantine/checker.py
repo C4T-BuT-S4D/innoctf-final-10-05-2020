@@ -64,7 +64,7 @@ class Checker(BaseChecker):
 
         cid = self.mch.upload_code(s, code, w)
 
-        self.cquit(Status.OK, f'{u}:{p}:{cid}:{w}')
+        self.cquit(Status.OK, cid, f'{u}:{p}:{cid}:{w}')
 
     def get(self, flag_id, flag, vuln):
         s = get_initialized_session()
